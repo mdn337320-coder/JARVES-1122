@@ -1,0 +1,6 @@
+{
+  "name": "JARVIS Trading Intelligence",
+  "description": "An elite AI-powered trading assistant and macroeconomics intelligence cockpit for forex and gold scalpers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
