@@ -1,8 +1,9 @@
 import React from 'react';
-import { Trade } from '../types';
+import { Trade, PriceData } from '../types';
 import { Calculator, FileText, Trash2, HelpCircle, PlusCircle, Sparkles, TrendingUp, TrendingDown, Percent, DollarSign, Activity } from 'lucide-react';
 
 interface JournalCalculatorProps {
+  prices: Record<string, PriceData>;
   // Calculator state
   riskPair: string;
   setRiskPair: (val: string) => void;
@@ -45,6 +46,7 @@ interface JournalCalculatorProps {
 }
 
 export default function JournalCalculator({
+  prices,
   riskPair,
   setRiskPair,
   riskPercent,
@@ -226,7 +228,33 @@ export default function JournalCalculator({
 
             <div className="grid grid-cols-3 gap-2.5">
               <div>
-                <label className="text-[8px] text-slate-500 font-mono font-bold block mb-1">Entry Price</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[8px] text-slate-500 font-mono font-bold block">Entry Price</label>
+                  {prices && prices[journalPair] && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curPrice = prices[journalPair].price;
+                        setJournalEntry(curPrice.toString());
+                        // Auto-calculate suggested SL and TP based on typical SMC structure
+                        if (journalPair === 'BTCUSD') {
+                          setJournalSL((curPrice - (journalDir === 'BUY' ? 450 : -450)).toFixed(0));
+                          setJournalTP((curPrice + (journalDir === 'BUY' ? 900 : -900)).toFixed(0));
+                        } else if (journalPair === 'XAUUSD') {
+                          setJournalSL((curPrice - (journalDir === 'BUY' ? 5 : -5)).toFixed(1));
+                          setJournalTP((curPrice + (journalDir === 'BUY' ? 10 : -10)).toFixed(1));
+                        } else {
+                          setJournalSL((curPrice - (journalDir === 'BUY' ? 0.0030 : -0.0030)).toFixed(5));
+                          setJournalTP((curPrice + (journalDir === 'BUY' ? 0.0060 : -0.0060)).toFixed(5));
+                        }
+                      }}
+                      className="text-[7px] font-mono font-bold text-amber-400 hover:text-slate-950 hover:bg-amber-400 bg-amber-500/10 px-1 rounded cursor-pointer transition-all uppercase tracking-wider"
+                      title="Auto-feed live spot price from the feed"
+                    >
+                      ⚡ Feed
+                    </button>
+                  )}
+                </div>
                 <input
                   type="number"
                   step="any"

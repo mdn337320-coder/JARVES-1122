@@ -66,6 +66,8 @@ export interface NewsEvent {
   impact: string;
   forecast: string;
   previous: string;
+  date?: string;
+  time?: string;
 }
 
 export interface NewsAnalysis {

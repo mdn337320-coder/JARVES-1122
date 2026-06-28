@@ -87,7 +87,7 @@ export default function Watchlist({ prices, selectedPair, setSelectedPair, lastU
           <div className="bg-slate-950/50 border border-slate-850 px-3 py-2 rounded-lg flex items-center justify-between text-[9px]">
             <span className="text-slate-500 font-sans flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              BTCUSD: <span className="text-emerald-400 font-bold font-mono">COINBASE WEBSOCKET (0ms)</span>
+              BTCUSD: <span className="text-emerald-400 font-bold font-mono">BINANCE WEBSOCKET (0ms)</span>
             </span>
             <span className="text-slate-600 font-mono text-[8px]">{lastUpdateTime || 'LIVE'}</span>
           </div>
