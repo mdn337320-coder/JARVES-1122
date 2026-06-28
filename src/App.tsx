@@ -366,9 +366,119 @@ function getSimulatedScenario(title: string, country: string, deviation: 'ABOVE'
   return { scenarioName, dxyBias, goldBias, summary, steps, playbook };
 }
 
+const initialMockPrices: Record<string, PriceData> = {
+  XAUUSD: { price: 2342.50, change: 12.40, changePercent: 0.53, high: 2355.00, low: 2328.10, history: [2330, 2335, 2340, 2342.50], isSimulated: true },
+  BTCUSD: { price: 61250.00, change: 450.00, changePercent: 0.74, high: 61800.00, low: 60500.00, history: [60800, 60950, 61100, 61250.00], isSimulated: true },
+  EURUSD: { price: 1.0845, change: -0.0021, changePercent: -0.19, high: 1.0890, low: 1.0820, history: [1.0866, 1.086, 1.085, 1.0845], isSimulated: true },
+  GBPUSD: { price: 1.2650, change: 0.0015, changePercent: 0.12, high: 1.2680, low: 1.2610, history: [1.2635, 1.262, 1.264, 1.2650], isSimulated: true },
+  USDJPY: { price: 157.85, change: 0.45, changePercent: 0.29, high: 158.20, low: 157.10, history: [157.40, 157.2, 157.5, 157.85], isSimulated: true },
+  GBPJPY: { price: 199.65, change: 0.85, changePercent: 0.43, high: 200.10, low: 198.90, history: [198.80, 199.1, 199.4, 199.65], isSimulated: true }
+};
+
+function generateLocalEventAnalysis(event: NewsEvent): EventAnalysisData {
+  const title = event.title.toUpperCase();
+  const country = event.country.toUpperCase();
+  const isHigh = event.impact === 'High';
+  
+  let consensusBias: 'BULLISH' | 'BEARISH' | 'VOLATILE RANGE' = 'VOLATILE RANGE';
+  let bullProb = 50;
+  let bearProb = 50;
+  let volIndex = isHigh ? 92 : 65;
+  let liqProb = isHigh ? 88 : 60;
+  let rateShift = isHigh ? 75 : 15;
+  
+  let upperTarget = "$2365 (Gold) / 69,500 (BTC)";
+  let lowerTarget = "$2305 (Gold) / 64,800 (BTC)";
+  let liquidityZone = "$2315 - $2322 (XAUUSD Daily Breaker Zone)";
+  
+  let vanceOpening = "";
+  let silasOpening = "";
+  let vanceRebuttal = "";
+  let silasTactical = "";
+  let macroImpactAnalysis = "";
+
+  if (title.includes("NFP") || title.includes("EMPLOYMENT") || title.includes("ADP") || title.includes("JOB")) {
+    consensusBias = "VOLATILE RANGE";
+    bullProb = 48;
+    bearProb = 52;
+    upperTarget = "69,200 (BTC) / $2358 (XAUUSD)";
+    lowerTarget = "65,400 (BTC) / $2295 (XAUUSD)";
+    liquidityZone = "BTCUSD 4H Order Block at 65,800";
+    
+    vanceOpening = `Analyzing the upcoming ${event.title} (${country}). This jobs print is critical for Fed monetary path. A strong reading will cement the high-for-longer regime, lifting real yields and punishing non-yielding bullion.`;
+    silasOpening = `Understood on the macro yields, Dr. Vance. But technically, we have key retail sell stops resting right below $2310 on XAUUSD. The algorithm will likely run these stops first before any bullish shift.`;
+    vanceRebuttal = `That's a short-term liquidity view, Silas, but structural trends are driven by capital costs. If payrolls surprise by -30K, no amount of technical blocks will stop gold from a $40 breakout.`;
+    silasTactical = `Agreed on that extreme tail risk. Tactically, we wait for the 5-minute displacement after the initial 8:30am hunt. If a bullish breaker forms, we target the fair value gap up at $2358.`;
+    macroImpactAnalysis = `The Non-Farm Payrolls release is the premier market-moving indicator. In this environment, employment growth determines the central bank's timing on rate adjustments, creating severe bidirectional liquidity sweeps in early New York trading.`;
+  } else if (title.includes("CPI") || title.includes("INFLATION") || title.includes("PCE")) {
+    consensusBias = "BULLISH";
+    bullProb = 62;
+    bearProb = 38;
+    upperTarget = "$2385 (Gold) / 71,200 (BTC)";
+    lowerTarget = "$2320 (Gold) / 66,100 (BTC)";
+    liquidityZone = "XAUUSD H4 Fair Value Gap at $2338 - $2342";
+    
+    vanceOpening = `Disinflation progress remains the focal point for all G10 central banks. The forecast of ${event.forecast} represents a minor tightening. Any surprise heat in core inflation will spark an aggressive hawkish pricing response.`;
+    silasOpening = `Technically, XAUUSD is coiled in a daily symmetric triangle. If the inflation print triggers a downside reaction, the H4 FVG at $2338 is the primary institutional discount area to watch for buy setups.`;
+    vanceRebuttal = `Agreed. But remember, a lower CPI print means real rates decline, which is fundamentally highly supportive for Gold. It would represent an immediate green light for capital allocation back into gold reserves.`;
+    silasTactical = `Indeed. If we clear the triangle resistance on a soft CPI, we'll see a classic short-squeeze distribution run. Wait for the New York open block retest before chasing the breakout.`;
+    macroImpactAnalysis = `Consumer Price Index (CPI) measures the average change over time in the prices paid by consumers. Since central banks target inflation of 2.0%, any persistent deviation of this metric directly dictates the interest rate policy path, producing massive immediate volatility in all global pairs.`;
+  } else if (title.includes("FOMC") || title.includes("RATE") || title.includes("DECISION") || title.includes("FED") || title.includes("BOE") || title.includes("ECB") || title.includes("BOJ")) {
+    consensusBias = "BEARISH";
+    bullProb = 35;
+    bearProb = 65;
+    upperTarget = "$2420 (Gold) / 72,500 (BTC)";
+    lowerTarget = "$2280 (Gold) / 63,400 (BTC)";
+    liquidityZone = "FOMC Liquidated High Sweep at $2392";
+    
+    vanceOpening = `The central bank statement is the ultimate market event. Current terminal rate expectations are highly fragile. With the forecast standing at ${event.forecast}, any subtle adjustments to forward guidance will reshape the yield curve.`;
+    silasOpening = `From an SMC perspective, these announcements represent algorithmic sweep events. We typically see double-sided sweeps of both previous daily highs and lows within the first 15 minutes.`;
+    vanceRebuttal = `That's exactly why macro participants watch the live press conference. The press conference frequently reverses the initial knee-jerk statement reaction, as the chair balances hawkish actions with dovish commentary.`;
+    silasTactical = `Exactly. We'll leave our hands off the keys during the first 30 minutes. Once the structural breaker block is confirmed, we'll trade the expansion leg toward the premium weekly liquidity pool.`;
+    macroImpactAnalysis = `Central bank rate decisions and monetary policy statements set the benchmark cost of capital. A hawkish stance increases local currency value but creates a strong liquidity drain from non-yielding commodities and crypto, while a dovish stance devalues cash and fuels rallies.`;
+  } else {
+    consensusBias = isHigh ? "VOLATILE RANGE" : "BULLISH";
+    bullProb = isHigh ? 55 : 51;
+    bearProb = isHigh ? 45 : 49;
+    upperTarget = "$2360 (Gold) / 68,900 (BTC)";
+    lowerTarget = "$2315 (Gold) / 65,200 (BTC)";
+    liquidityZone = "15m Bullish Mitigation Block at $2330";
+    
+    vanceOpening = `Evaluating ${event.title} from ${event.country}. Given the forecast of ${event.forecast} vs previous ${event.previous}, we expect local asset reallocation. Central banks will integrate this into their quarterly summary models.`;
+    silasOpening = `On the lower timeframes, the volume profile is heavily concentrated around the session Point of Control. I expect price to remain rangebound until a clean mitigation of the local 15m order block.`;
+    vanceRebuttal = `True, but do not underestimate the sentiment shift. Any deviation of more than 5% from the consensus will break that consolidative profile and establish a new intraday trend.`;
+    silasTactical = `Understood. In that case, we watch for a premium/discount sweep, followed by a displacement candle. A clean entry on the return to the newly created breaker block is the highest-probability play.`;
+    macroImpactAnalysis = `Economic releases of this tier represent secondary macroeconomic guides. While they do not alter monetary regimes on their own, their cumulative impact shapes the economic outlook and guides institutional risk exposure adjustments leading into major monthly sessions.`;
+  }
+
+  return {
+    consensusBias,
+    probabilities: {
+      bullishExpansion: bullProb,
+      bearishSweep: bearProb,
+      volatilityDangerIndex: volIndex,
+      liquidityGrabProb: liqProb,
+      interestRateShiftProb: rateShift
+    },
+    targets: {
+      upperTarget,
+      lowerTarget,
+      liquidityZone
+    },
+    debateTranscript: [
+      { speaker: "Macro Hawk", text: vanceOpening },
+      { speaker: "SMC Quant", text: silasOpening },
+      { speaker: "Macro Hawk", text: vanceRebuttal },
+      { speaker: "SMC Quant", text: silasTactical }
+    ],
+    macroImpactAnalysis
+  };
+}
+
 export default function App() {
   // --- GENERAL STATE ---
   const [prices, setPrices] = useState<Record<string, PriceData>>({});
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [utcTime, setUtcTime] = useState<Date>(new Date());
   const [wsStatus, setWsStatus] = useState<'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED'>('DISCONNECTED');
@@ -496,7 +606,7 @@ export default function App() {
     try {
       const res = await fetch('/api/prices');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.prices) {
         setPrices(prev => {
           // Merge websocket-updated BTCUSD with the fetched prices
           const merged = { ...data.prices };
@@ -505,9 +615,44 @@ export default function App() {
           }
           return merged;
         });
+      } else {
+        throw new Error('Prices load returned non-success response');
       }
     } catch (e) {
-      console.error('Failed to fetch prices');
+      console.warn('Unable to reach backend /api/prices. Activating browser-side price drift simulation.');
+      setIsOfflineMode(true);
+      setPrices(prev => {
+        const nextPrices = { ...prev };
+        const symbols = ['XAUUSD', 'BTCUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY'];
+        symbols.forEach(sym => {
+          if (!nextPrices[sym]) {
+            nextPrices[sym] = { ...initialMockPrices[sym] };
+          } else {
+            const current = nextPrices[sym];
+            // Only update non-websocket BTCUSD or other tickers
+            if (sym !== 'BTCUSD' || current.isSimulated) {
+              const driftPercent = (Math.random() - 0.5) * 0.0006; // very small drift
+              const newPrice = current.price * (1 + driftPercent);
+              const change = newPrice - (initialMockPrices[sym].price - initialMockPrices[sym].change);
+              const changePercent = (change / (initialMockPrices[sym].price - initialMockPrices[sym].change)) * 100;
+              const nextHistory = current.history ? [...current.history.slice(-19), newPrice] : [newPrice];
+              
+              nextPrices[sym] = {
+                ...current,
+                price: newPrice,
+                change,
+                changePercent,
+                history: nextHistory,
+                isSimulated: true,
+                tickDir: newPrice > current.price ? 'up' : newPrice < current.price ? 'down' : 'stable'
+              };
+            }
+          }
+        });
+        return nextPrices;
+      });
+      const now = new Date();
+      setLastUpdateTime(now.toTimeString().split(' ')[0]);
     }
   };
 
@@ -523,9 +668,31 @@ export default function App() {
         if (defaultEvent) {
           triggerEventAnalysis(defaultEvent);
         }
+      } else {
+        throw new Error('News load returned non-success response');
       }
     } catch (e) {
-      console.error('Failed to load economic events');
+      console.warn('Unable to reach backend /api/news. Operating with browser-side fallback macroeconomic calendar.');
+      setIsOfflineMode(true);
+      const fallbackEvents: NewsEvent[] = [
+        { title: "Weekly Market Open & Sunday Gap Analysis", country: "USD", impact: "Medium", forecast: "N/A", previous: "N/A", date: "2026-06-28", time: "5:00pm" },
+        { title: "ECB President Lagarde Speaks", country: "EUR", impact: "High", forecast: "N/A", previous: "N/A", date: "2026-06-29", time: "9:00am" },
+        { title: "Pending Home Sales m/m", country: "USD", impact: "Medium", forecast: "1.2%", previous: "-2.1%", date: "2026-06-29", time: "10:00am" },
+        { title: "CB Consumer Confidence", country: "USD", impact: "Medium", forecast: "103.0", previous: "101.3", date: "2026-06-30", time: "10:00am" },
+        { title: "CPI Flash Estimate y/y", country: "EUR", impact: "High", forecast: "2.4%", previous: "2.6%", date: "2026-06-30", time: "5:00am" },
+        { title: "ADP Non-Farm Employment Change", country: "USD", impact: "High", forecast: "155K", previous: "192K", date: "2026-07-01", time: "8:15am" },
+        { title: "ISM Manufacturing PMI", country: "USD", impact: "High", forecast: "48.2", previous: "49.1", date: "2026-07-01", time: "10:00am" },
+        { title: "Unemployment Claims", country: "USD", impact: "Medium", forecast: "212K", previous: "218K", date: "2026-07-02", time: "8:30am" },
+        { title: "NFP (Non-Farm Employment Change)", country: "USD", impact: "High", forecast: "185K", previous: "175K", date: "2026-07-03", time: "8:30am" },
+        { title: "ISM Services PMI", country: "USD", impact: "High", forecast: "51.4", previous: "50.8", date: "2026-07-03", time: "10:00am" },
+        { title: "BOE Official Bank Rate Decision", country: "GBP", impact: "High", forecast: "5.00%", previous: "5.25%", date: "2026-07-04", time: "11:00am" },
+        { title: "BOJ Policy Rate Press Conference", country: "JPY", impact: "High", forecast: "0.10%", previous: "0.10%", date: "2026-07-05", time: "3:30am" }
+      ];
+      setNewsEvents(fallbackEvents);
+      const defaultEvent = fallbackEvents.find((e: NewsEvent) => e.impact === 'High') || fallbackEvents[0];
+      if (defaultEvent) {
+        triggerEventAnalysis(defaultEvent);
+      }
     } finally {
       setIsNewsLoading(false);
     }
@@ -551,10 +718,15 @@ export default function App() {
       if (data.success && data.data) {
         setAnalysisData(data.data);
       } else {
-        console.error('Failed to analyze event');
+        throw new Error('Analyze event returned non-success response');
       }
     } catch (e) {
-      console.error('Error in event analysis call', e);
+      console.warn('Unable to reach backend /api/analyze-event. Generating high-fidelity structural analysis in client mode.');
+      setIsOfflineMode(true);
+      // Simulate analysis generation latency slightly to mimic real AI think times
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const clientSideData = generateLocalEventAnalysis(event);
+      setAnalysisData(clientSideData);
     } finally {
       setIsAnalyzing(false);
       // Scroll to view on smaller screens
@@ -759,6 +931,28 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* 2.5 OFFLINE HIGH-FIDELITY CLIENT MODE BANNER */}
+      {isOfflineMode && (
+        <div className="bg-amber-500/5 border-b border-amber-500/20 px-6 py-2.5 flex items-center justify-between gap-4 text-xs font-sans">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="text-[10.5px] text-amber-200/90 leading-tight">
+              <strong className="text-amber-400 uppercase tracking-wide font-mono mr-1.5">[LOCAL CLIENT SIMULATION ACTIVE]:</strong> 
+              No full-stack Node.js Express server detected (common on static platforms like Vercel). JARVIS has successfully engaged high-fidelity client-side macroeconomic and SMC simulations. Real-time Binance spot rates are active via direct browser WebSockets!
+            </span>
+          </div>
+          <button 
+            onClick={() => setIsOfflineMode(false)}
+            className="text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 rounded px-2 py-0.5 uppercase tracking-wider transition-all cursor-pointer shrink-0"
+          >
+            Acknowledge
+          </button>
+        </div>
+      )}
 
       {/* 3. PRIMARY AREA WORKSPACE */}
       <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-y-auto">

@@ -93,11 +93,58 @@ function cleanAndParseJSON(rawText: string): any {
   if (match) {
     cleaned = match[1].trim();
   } else {
-    // 2. If no markdown block is found, extract content starting with '{' and ending with '}'
+    // 2. Extract matched balance of braces/brackets to ignore trailing repetition garbage (like }}]}]}]})
     const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    const firstBracket = cleaned.indexOf('[');
+    let startIdx = -1;
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+      startIdx = firstBrace;
+    } else if (firstBracket !== -1) {
+      startIdx = firstBracket;
+    }
+
+    if (startIdx !== -1) {
+      let depth = 0;
+      let inString = false;
+      let escape = false;
+      let cutIndex = -1;
+
+      for (let i = startIdx; i < cleaned.length; i++) {
+        const char = cleaned[i];
+        if (escape) {
+          escape = false;
+          continue;
+        }
+        if (char === '\\') {
+          escape = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (char === '{' || char === '[') {
+            depth++;
+          } else if (char === '}' || char === ']') {
+            depth--;
+            if (depth === 0) {
+              cutIndex = i;
+              break;
+            }
+          }
+        }
+      }
+
+      if (cutIndex !== -1) {
+        cleaned = cleaned.substring(startIdx, cutIndex + 1);
+      } else {
+        // Fallback to standard substring
+        const lastBrace = cleaned.lastIndexOf('}');
+        if (lastBrace !== -1 && lastBrace > startIdx) {
+          cleaned = cleaned.substring(startIdx, lastBrace + 1);
+        }
+      }
     }
   }
 
